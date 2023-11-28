@@ -6,30 +6,19 @@ import os
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from dataloader import DataHolder, load_tensor
-from option import Options
 import numpy as np
 import torch.nn.functional
 import sys
-from model import UNet
 
-
+import setting
+from model.model_l_base import UNet_Large_Basic
 
 
 if __name__ == "__main__":
-    opt = Options().gather_options()
+    net = UNet_Large_Basic(3, 3)
+    net.to(setting.device)
 
-    create_file(opt.save_path)  # create folder to save model
-    create_file(opt.pred_path)  # create folder to save prediction
-
-    device = torch.device("cpu")
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    print(device)
-
-    net = UNet(opt)
-    net.to(device)
-
-    if opt.train:
+    if setting.train:
         print("Start training")
         net.train()
         file_names = load_tensor(opt.train_name_path)
