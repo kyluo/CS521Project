@@ -38,7 +38,14 @@ def val(data_loader, model):
 
 
 def test(x, model):
-	x = x.to(setting.device)
+    x = x.to(setting.device)
     pred = model(x.unsqueeze_(0))
-	return pred[0]
-    
+    return pred[0]
+
+class objectify(object):
+    def __init__(self, d):
+        for k, v in d.items():
+            if isinstance(k, (list, tuple)):
+                setattr(self, k, [objectify(x) if isinstance(x, dict) else x for x in v])
+            else:
+                setattr(self, k, objectify(v) if isinstance(v, dict) else v)

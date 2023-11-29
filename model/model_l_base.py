@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from .block_unet import UnetBlock
-
+from .block.unet import UnetBlock
+# 2x upsample
 class UNet_Large_Basic(nn.Module):
     def __init__(self, in_channel, out_channel, dropout=0.5, filter_channel=64):
         super(UNet_Large_Basic, self).__init__()
@@ -12,7 +12,7 @@ class UNet_Large_Basic(nn.Module):
 
         uprelu = nn.ReLU(True)
         upconv = nn.ConvTranspose2d(filter_channel*2, out_channel, kernel_size=4, 
-                                      stride=2, padding=1)
+                                      stride=4, padding=0)
         
         # (input_nc, outer_nc, filter_nc)
         # 512 to 512 - 512 to 512; inner channel, need dropout layer, does not cancate (no skip layer) layer_modiyier=1
