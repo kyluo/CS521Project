@@ -39,16 +39,17 @@ class UNet_Large_PA(nn.Module):
         # 256 to 512 - (512 + 512) to 256
         unet_block = UnetBlock(4*filter_channel, 4*filter_channel, 8*filter_channel, 
                                submodule=unet_block)
-        unet_block = PA(8*filter_channel, unet_block)
+        unet_block = PA(4*filter_channel, unet_block)
 
         # 128 to 256 - (256 + 256) to 128
         unet_block = UnetBlock(2*filter_channel, 2*filter_channel, 4*filter_channel, 
                                submodule=unet_block)
-        unet_block = PA(8*filter_channel, unet_block)
+        unet_block = PA(2*filter_channel, unet_block)
 
         # 64 to 128 - (128 + 128) to 64
         unet_block = UnetBlock(filter_channel, filter_channel, 2*filter_channel, 
                                submodule=unet_block)
+        unet_block = PA(filter_channel, unet_block)
         # # n to 64 - 64 to m; outter channel
         # unet_block = UnetBlock(in_channel, out_channel, 64, submodule=unet_block)
 
