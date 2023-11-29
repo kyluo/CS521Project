@@ -17,6 +17,7 @@ from model.model_l_base import UNet_Large_Basic
 from datasets import create_dataloader, create_dataset
 from utils import objectify
 import logging
+
 logname = "train.log"
 logging.basicConfig(filename=logname,
                     filemode='a',
