@@ -12,11 +12,14 @@ import sys
 import math
 
 import setting
+import utils
 from model.model_l_base import UNet_Large_Basic
 from datasets import create_dataloader, create_dataset
 from utils import objectify
 import logging
 logger = logging.getLogger('base')
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 if __name__ == "__main__":
@@ -26,15 +29,31 @@ if __name__ == "__main__":
         "show_progress": True,
         "save_model": False,
         "print_freq": 10,
+        "val_freq": 100,
     }
     opt = objectify(opt)
     dataset_opt = {
         "dataroot_GT" : "data/DIV2K_train_HR",
         "dataroot_LQ" : None,
-        "batch_size" : 16,
+        "batch_size" : 4,
         "mode" : "LQGT",
         "data_type": "img",
         "phase" : "train",
+        "name" : "DIV2K",
+        "n_workers" : 4,
+        "scale" : 2, # for modcrop in the validation / test phase
+        "GT_size" : 1024,
+        "color" : "RGB",
+        "use_flip": True,
+        "use_rot": True,
+    }
+    val_dataset_opt = {
+        "dataroot_GT" : "data/DIV2K_valid_HR",
+        "dataroot_LQ" : None,
+        "batch_size" : 16,
+        "mode" : "LQGT",
+        "data_type": "img",
+        "phase" : "test",
         "name" : "DIV2K",
         "n_workers" : 4,
         "scale" : 2, # for modcrop in the validation / test phase
@@ -48,18 +67,18 @@ if __name__ == "__main__":
     
     train_set = create_dataset(dataset_opt)
     train_loader = create_dataloader(train_set, dataset_opt, opt)
+    val_set = create_dataset(dataset_opt)
+    val_loader = create_dataloader(val_set, val_dataset_opt, opt)
     print("Start training")
     net.train()
     loss_func = nn.MSELoss()
     for epoch in tqdm(range(opt.epoch), total=opt.epoch, desc="Training ...", position=1, disable=opt.show_progress):
-        for current_step, train_data in enumerate(train_loader):
+        logger.info("Epoch: {}".format(epoch))
+        for current_step, train_data in enumerate(tqdm(train_loader)):
 
             lr = train_data['LQ'].to(setting.device)
-            print(lr.shape)
             hr = train_data['GT'].to(setting.device)
-            print(hr.shape)
             sr = net(lr)
-            print(sr.shape)
             loss = loss_func(sr, hr)
             loss.backward()
             optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001, betas=(0.9, 0.999))
@@ -72,51 +91,27 @@ if __name__ == "__main__":
                 logger.info(
                     "Epoch: {} | Iteration: {} | Loss: {}".format(epoch, current_step, loss.item()))
             #### validation
-            if opt['datasets'].get('val', None) and current_step % opt['train']['val_freq'] == 0:
-                if opt['model'] in ['sr', 'srgan'] and rank <= 0:  # image restoration validation
-                    # does not support multi-GPU validation
-                    pbar = util.ProgressBar(len(val_loader))
-                    avg_psnr = 0.
-                    idx = 0
-                    for val_data in val_loader:
-                        idx += 1
-                        img_name = os.path.splitext(os.path.basename(val_data['LQ_path'][0]))[0]
-                        img_dir = os.path.join(opt['path']['val_images'], img_name)
-                        util.mkdir(img_dir)
+            if current_step % opt.val_freq == 0:
+                net.eval()
+                avg_psnr = 0.
+                idx = 0
+                for val_data in val_loader:
+                    idx += 1
+                    lr = val_data['LQ'].to(setting.device)
+                    gt = val_data['GT'].to(setting.device)
+                    sr = net(lr)
+                    sr = sr.detach().cpu()
+                    gt = gt.detach().cpu()
+                    sr_img = utils.tensor2img(sr)  # uint8
+                    gt_img = utils.tensor2img(gt)  # uint8
+                    avg_psnr += utils.calculate_psnr(sr_img, gt_img)
+                avg_psnr = avg_psnr / idx
+                net.train()
 
-                        model.feed_data(val_data)
-                        model.test()
-
-                        visuals = model.get_current_visuals()
-                        sr_img = util.tensor2img(visuals['rlt'])  # uint8
-                        gt_img = util.tensor2img(visuals['GT'])  # uint8
-
-                        # Save SR images for reference
-                        save_img_path = os.path.join(img_dir,
-                                                     '{:s}_{:d}.png'.format(img_name, current_step))
-                        if opt['save_img']:
-                            util.save_img(sr_img, save_img_path)
-
-                        # calculate PSNR
-                        sr_img, gt_img = util.crop_border([sr_img, gt_img], opt['scale'])
-                        avg_psnr += util.calculate_psnr(sr_img, gt_img)
-                        pbar.update('Test {}'.format(img_name))
-
-                    avg_psnr = avg_psnr / idx
-
-                    # log
-                    logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
+                # log
+                logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
 
 
-        
-
-        if (not opt.show_progress):
-            print("\n")
-            print(
-                f'Loss_G for Training on epoch {str(epoch)} is {str(loss_G)} \n')
-            print(
-                f'Loss_D for Training on epoch {str(epoch)} is {str(loss_D)} \n')
-
-        # if epoch % 100 == 0 and opt.save_model:
-        #     save_model(net, opt)
+        if epoch % 100 == 0 and opt.save_model:
+            torch.save(net.state_dict(), os.path.join(setting.model_path, "model_{}.pth".format(epoch)))
     print("\nTraining Complete\n")
