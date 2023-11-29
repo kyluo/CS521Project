@@ -21,15 +21,37 @@ logger = logging.getLogger('base')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
+def compute_avg_psnr(val_loader, net):
+    net.eval()
+    avg_psnr = 0.
+    idx = 0
+    for val_data in val_loader:
+        if(idx > 10):
+            break
+        idx += 1
+        lr = val_data['LQ'].to(setting.device)
+        gt = val_data['GT'].to(setting.device)
+        sr = net(lr)
+        sr = sr.detach().cpu()
+        gt = gt.detach().cpu()
+        sr_img = utils.tensor2img(sr)  # uint8
+        gt_img = utils.tensor2img(gt)  # uint8
+        avg_psnr += utils.calculate_psnr(sr_img, gt_img)
+    avg_psnr = avg_psnr / idx
+    net.train()
+
+    # log
+    logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
 
 if __name__ == "__main__":
     opt = {
         "train": True,
-        "epoch": 10,
+        "epoch": 1,
         "show_progress": True,
         "save_model": False,
         "print_freq": 10,
-        "val_freq": 100,
+        "val_freq": 50,
+        "checkpoint": "model_checkpoints/model_0.pth",
     }
     opt = objectify(opt)
     dataset_opt = {
@@ -64,7 +86,8 @@ if __name__ == "__main__":
     }
     net = UNet_Large_Basic(3, 3)
     net.to(setting.device)
-    
+    if opt.checkpoint is not None:
+        net.load_state_dict(torch.load(opt.checkpoint))
     train_set = create_dataset(dataset_opt)
     train_loader = create_dataloader(train_set, dataset_opt, opt)
     val_set = create_dataset(dataset_opt)
@@ -72,6 +95,8 @@ if __name__ == "__main__":
     print("Start training")
     net.train()
     loss_func = nn.MSELoss()
+    if not os.path.exists(setting.model_path):
+        os.mkdir(setting.model_path)
     for epoch in tqdm(range(opt.epoch), total=opt.epoch, desc="Training ...", position=1, disable=opt.show_progress):
         logger.info("Epoch: {}".format(epoch))
         for current_step, train_data in enumerate(tqdm(train_loader)):
@@ -92,26 +117,10 @@ if __name__ == "__main__":
                     "Epoch: {} | Iteration: {} | Loss: {}".format(epoch, current_step, loss.item()))
             #### validation
             if current_step % opt.val_freq == 0:
-                net.eval()
-                avg_psnr = 0.
-                idx = 0
-                for val_data in val_loader:
-                    idx += 1
-                    lr = val_data['LQ'].to(setting.device)
-                    gt = val_data['GT'].to(setting.device)
-                    sr = net(lr)
-                    sr = sr.detach().cpu()
-                    gt = gt.detach().cpu()
-                    sr_img = utils.tensor2img(sr)  # uint8
-                    gt_img = utils.tensor2img(gt)  # uint8
-                    avg_psnr += utils.calculate_psnr(sr_img, gt_img)
-                avg_psnr = avg_psnr / idx
-                net.train()
+                compute_avg_psnr(val_loader, net)
 
-                # log
-                logger.info('# Validation # PSNR: {:.4e}'.format(avg_psnr))
-
-
-        if epoch % 100 == 0 and opt.save_model:
+        if epoch % 50 == 0 and opt.save_model:
             torch.save(net.state_dict(), os.path.join(setting.model_path, "model_{}.pth".format(epoch)))
+    compute_avg_psnr(val_loader, net)
+    torch.save(net.state_dict(), os.path.join(setting.model_path, "model_{}.pth".format(epoch)))
     print("\nTraining Complete\n")
