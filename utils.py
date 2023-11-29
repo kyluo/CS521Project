@@ -4,6 +4,8 @@ from tqdm import tqdm
 import setting
 import math
 import numpy as np
+import cv2
+from torchvision.utils import make_grid
 
 def loss_MSE():
      return nn.MSELoss()
@@ -99,3 +101,8 @@ class objectify(object):
                 setattr(self, k, [objectify(x) if isinstance(x, dict) else x for x in v])
             else:
                 setattr(self, k, objectify(v) if isinstance(v, dict) else v)
+
+def save_img(img, img_path):
+    img = img.squeeze()
+    img = img[:, :, [2, 1, 0]]
+    cv2.imwrite(img_path, img)

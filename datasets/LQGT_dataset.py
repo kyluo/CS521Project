@@ -105,6 +105,7 @@ class LQGTDataset(data.Dataset):
                                           self.opt['use_rot'])
 
         if self.opt['color']:  # change color space if necessary
+            H, W, C = img_LQ.shape
             img_LQ = util.channel_convert(C, self.opt['color'],
                                           [img_LQ])[0]  # TODO during val no definition
 

@@ -17,6 +17,12 @@ from model.model_l_base import UNet_Large_Basic
 from datasets import create_dataloader, create_dataset
 from utils import objectify
 import logging
+logname = "train.log"
+logging.basicConfig(filename=logname,
+                    filemode='a',
+                    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                    datefmt='%H:%M:%S',
+                    level=logging.DEBUG)
 logger = logging.getLogger('base')
 logger.setLevel(logging.DEBUG)
 logger.addHandler(logging.StreamHandler(sys.stdout))
@@ -46,12 +52,12 @@ def compute_avg_psnr(val_loader, net):
 if __name__ == "__main__":
     opt = {
         "train": True,
-        "epoch": 1,
+        "epoch": 100,
+        "save_model": True,
         "show_progress": True,
-        "save_model": False,
         "print_freq": 10,
-        "val_freq": 50,
-        "checkpoint": "model_checkpoints/model_0.pth",
+        "val_freq": 100,
+        "checkpoint": "model_checkpoints/model_99.pth",
     }
     opt = objectify(opt)
     dataset_opt = {
@@ -109,8 +115,7 @@ if __name__ == "__main__":
             optimizer = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0001, betas=(0.9, 0.999))
             optimizer.step()
             optimizer.zero_grad()
-            
-        
+                    
             #### log
             if current_step % opt.print_freq == 0:
                 logger.info(
@@ -119,7 +124,7 @@ if __name__ == "__main__":
             if current_step % opt.val_freq == 0:
                 compute_avg_psnr(val_loader, net)
 
-        if epoch % 50 == 0 and opt.save_model:
+        if epoch % 10 == 0 and opt.save_model:
             torch.save(net.state_dict(), os.path.join(setting.model_path, "model_{}.pth".format(epoch)))
     compute_avg_psnr(val_loader, net)
     torch.save(net.state_dict(), os.path.join(setting.model_path, "model_{}.pth".format(epoch)))

@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from .block_unet import UnetBlock
-from .block_pixel import PA
+from .block.unet import UnetBlock
+from .block.pixel import PA
 
 class UNet_Large_PA(nn.Module):
     def __init__(self, in_channel, out_channel, dropout=0.5, filter_channel=64):
