@@ -3,10 +3,11 @@ import torch.nn as nn
 
 class UnetBlock(nn.Module):
     def __init__(self, input_nc, outer_nc, filter_nc,
-                 submodule=None, dropout=1, layer_mod=2, 
-                 if_PA=False, name=" "):
+                 submodule=None, dropout=1, layer_mod=2, name=" "):
 
         super(UnetBlock, self).__init__()
+
+        self.name = name
 
         downrelu = nn.LeakyReLU(0.1, inplace=True)
         downconv = nn.Conv2d(input_nc, filter_nc, kernel_size=4,

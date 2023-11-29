@@ -5,7 +5,6 @@ from tqdm import tqdm
 import os
 from torchvision import transforms
 from torch.utils.data import DataLoader
-from dataloader import DataHolder, load_tensor
 import numpy as np
 import torch.nn.functional
 import sys
