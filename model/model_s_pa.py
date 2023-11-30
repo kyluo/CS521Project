@@ -5,15 +5,8 @@ from .block.unet import UnetBlock
 from .block.pixel import PA
 
 class UNet_Small_PA(nn.Module):
-    def __init__(self, in_channel, out_channel, dropout=0.5, filter_channel=64):
+    def __init__(self, in_channel, out_channel, dropout=0.5, filter_channel=64, super_res=False):
         super(UNet_Small_PA, self).__init__()
-        
-        downconv = nn.Conv2d(in_channel, filter_channel, kernel_size=4,
-                             stride=2, padding=1)
-
-        uprelu = nn.ReLU(True)
-        upconv = nn.ConvTranspose2d(filter_channel*2, out_channel, kernel_size=4, 
-                                      stride=2, padding=1)
         
         # block -4 inner
         unet_block = UnetBlock(4*filter_channel, 4*filter_channel, 4*filter_channel, 
@@ -37,7 +30,25 @@ class UNet_Small_PA(nn.Module):
         # # n to 64 - 64 to m; outter channel
         # unet_block = UnetBlock(in_channel, out_channel, 64, submodule=unet_block)
 
+        downconv = nn.Conv2d(in_channel, filter_channel, kernel_size=4,
+                             stride=2, padding=1)
+        
+        uprelu = nn.ReLU(True)
+        upconv = nn.ConvTranspose2d(filter_channel*2, out_channel, kernel_size=4, 
+                                      stride=2, padding=1)
+        
         model = [downconv] + [unet_block] + [uprelu, upconv, nn.Sigmoid()]
+
+        if super_res:
+            upconv1 = nn.ConvTranspose2d(filter_channel*2, out_channel*2, kernel_size=4, 
+                                      stride=2, padding=1)
+            upnorm = nn.BatchNorm2d(out_channel*2)
+
+            upconv2 = nn.ConvTranspose2d(out_channel*2, out_channel, kernel_size=4,
+                                    stride=2, padding=1)
+            model = [downconv] + [unet_block] + [uprelu, upconv1, upnorm, uprelu, upconv2, nn.Sigmoid()]
+    
+  
         self.model = nn.Sequential(*model)
 
 
