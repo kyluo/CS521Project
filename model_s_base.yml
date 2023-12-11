@@ -1,0 +1,8 @@
+train: true
+epoch: 60
+save_model: true
+show_progress: true
+print_freq: 10
+val_freq: 100
+checkpoint: model_checkpoints/model_s_40.pth
+save_checkpoint_freq: 10

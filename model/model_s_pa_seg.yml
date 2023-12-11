@@ -1,0 +1,11 @@
+#### general settings
+name: model_s_pa
+model: seg
+super_res: false
+in_channel: 3
+out_channel: 5
+
+#### logger
+logger:
+  print_freq: 10
+  log_path: model_s_pa_seg.log

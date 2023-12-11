@@ -1,0 +1,20 @@
+train:
+  name: remote_sensing_seg
+  mode: Segmentation
+  dataroot_input: data/remote_sensing_seg/data_vis
+  dataroot_label: data/remote_sensing_seg/mask
+  use_shuffle: false
+  n_workers: 4  # per GPU
+  batch_size: 8
+  phase: train
+  GT_size: 1024
+val:
+  name: remote_sensing_seg
+  mode: Segmentation
+  dataroot_input: data/remote_sensing_seg/data_vis
+  dataroot_label: data/remote_sensing_seg/mask
+  use_shuffle: false
+  n_workers: 1  # per GPU
+  batch_size: 1
+  phase: train
+  GT_size: 1024

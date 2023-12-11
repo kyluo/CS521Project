@@ -1,0 +1,43 @@
+#### general settings
+name: model_s_pa
+model: sr
+
+#### datasets
+datasets:
+  train:
+    name: DIV2K_train
+    mode: LQGT
+    dataroot_GT: data/DIV2K_train_HR
+    dataroot_LQ: null
+    use_shuffle: false
+    n_workers: 4  # per GPU
+    batch_size: 16
+    phase: train
+    scale: 2
+    color: RGB
+    data_type: img
+    GT_size: 1024
+    use_flip: true
+    use_rot: true
+    color: RGB
+  val:
+    name: DIV2K_valid
+    mode: LQGT
+    dataroot_GT: data/DIV2K_valid_HR
+    dataroot_LQ: null
+    use_shuffle: false
+    n_workers: 4  # per GPU
+    batch_size: 16
+    phase: train
+    scale: 2
+    color: RGB
+    data_type: img
+    GT_size: 1024
+    use_flip: true
+    use_rot: true
+    color: RGB
+
+#### logger
+logger:
+  print_freq: 10
+  log_path: model_s_pa.log

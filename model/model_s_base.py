@@ -4,7 +4,7 @@ import torch.nn as nn
 from .block.unet import UnetBlock
 
 class UNet_Small_Base(nn.Module):
-    def __init__(self, in_channel, out_channel, dropout=0.5, filter_channel=64, super_res=False):
+    def __init__(self, in_channel=3, out_channel=3, dropout=0.5, filter_channel=64, super_res=False):
         super(UNet_Small_Base, self).__init__()
         
         # block -4 inner

@@ -57,6 +57,11 @@ def calculate_psnr(img1, img2):
         return float('inf')
     return 20 * math.log10(255.0 / math.sqrt(mse))
 
+def calculate_pixel_acc(img1, img2):
+    # img1 and img2 are lable indices
+    assert img1.shape == img2.shape
+    return np.sum(img1 == img2) / img1.size
+
 def test(x, model):
     x = x.to(setting.device)
     pred = model(x.unsqueeze_(0))
@@ -72,5 +77,14 @@ class objectify(object):
 
 def save_img(img, img_path):
     img = img.squeeze()
-    img = img[:, :, [2, 1, 0]]
     cv2.imwrite(img_path, img)
+    
+def label_to_rgb(label):
+    label = label.squeeze()
+    rgb = np.zeros((label.shape[0], label.shape[1], 3))
+    rgb[label == 0] = [0, 0, 0]
+    rgb[label == 1] = [0, 0, 255]
+    rgb[label == 2] = [0, 255, 0]
+    rgb[label == 3] = [255, 0, 0]
+    rgb[label == 4] = [255, 255, 0]
+    return rgb.astype(np.uint8)
